@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Workflow name="Akamai Event Viewer" version="1.0" xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/Workflow/V2">
+    
+    <Parameters>
+        <Parameter name="host" label="Akamai API Host" required="true" />
+        <Parameter name="access_token" label="Access Token" required="true" secret="true" />
+        <Parameter name="client_token" label="Client Token" required="true" secret="true" />
+        <Parameter name="client_secret" label="Client Secret" required="true" secret="true" />
+    </Parameters>
+
+    <Actions>
+        
+        <!-- Initialize bookmark APENAS se for null -->
+        <If condition="/bookmark = null">
+            <Initialize path="/bookmark" value="${time() - (24 * 60 * 60 * 1000)}" />
+            <Log type="INFO" message="[Akamai] First run - initialized bookmark to 24h ago" />
+        </If>
+        
+        <!-- Converte bookmark para ISO -->
+        <FormatDate pattern="yyyy-MM-dd'T'HH:mm:ss" timeZone="UTC" time="${/bookmark}" savePath="/start_time" />
+        
+        <Log type="INFO" message="[Akamai] Fetching events since: ${/start_time} (bookmark: ${/bookmark})" />
+        
+        <!-- Track max timestamp -->
+        <Set path="/max_timestamp" value="${/bookmark}" />
+        
+        <!-- Call API -->
+        <CallEndpoint 
+            url="https://${/host}/event-viewer-api/v1/events?start=${/start_time}" 
+            method="GET" 
+            savePath="/response">
+            
+            <AkamaiEdgeGridAuthentication 
+                accessToken="${/access_token}" 
+                clientToken="${/client_token}" 
+                clientSecret="${/client_secret}" />
+            
+            <RequestHeader name="Accept" value="application/json" />
+        </CallEndpoint>
+        
+        <If condition="/response/status_code = 200">
+            <Set path="/events" value="${/response/body/events}" />
+            <Set path="/event_count" value="${count(/events)}" />
+            
+            <Log type="INFO" message="[Akamai] Retrieved ${/event_count} events" />
+            
+            <If condition="/event_count > 0">
+                <!-- Envia todos os eventos -->
+                <PostEvents path="/events" source="AkamaiEventViewer" />
+                
+                <!-- Extrai timestamp máximo -->
+                <Set path="/max_timestamp_str" value="${max(/events/eventTime)}" />
+                <Log type="INFO" message="[Akamai] Max eventTime: ${/max_timestamp_str}" />
+                
+                <!-- Parse para epoch milliseconds -->
+                <ParseDate pattern="yyyy-MM-dd'T'HH:mm:ss.SSS'Z'" timeZone="UTC" date="${/max_timestamp_str}" savePath="/parsed_max_timestamp" />
+                <Log type="INFO" message="[Akamai] Parsed max_timestamp: ${/parsed_max_timestamp}" />
+                
+                <!-- Atualiza max_timestamp se for maior -->
+                <If condition="/parsed_max_timestamp > /max_timestamp">
+                    <Set path="/max_timestamp" value="${/parsed_max_timestamp}" />
+                    <Log type="INFO" message="[Akamai] Updated max_timestamp to: ${/max_timestamp}" />
+                </If>
+            </If>
+            
+            <!-- Atualiza bookmark: max_timestamp + 1 segundo -->
+            <Set path="/bookmark" value="${/max_timestamp + 1000}" />
+            <Log type="INFO" message="[Akamai] Updated bookmark to: ${/bookmark}" />
+            
+        </If>
+        <Else>
+            <Log type="ERROR" message="[Akamai] API Error: ${/response/status_code}" />
+        </Else>
+        
+    </Actions>
+
+</Workflow>

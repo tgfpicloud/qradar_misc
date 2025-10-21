@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<WorkflowParameterValues xmlns="http://qradar.ibm.com/UniversalCloudRESTAPI/WorkflowParameterValues/V2">
+    <Value name="host" value="akab-xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.luna.akamaiapis.net" />
+    <Value name="access_token" value="akab-access-token-xxxxxxxxxxxxxxxx" />
+    <Value name="client_token" value="akab-client-token-xxxxxxxxxxxxxxxx" />
+    <Value name="client_secret" value="xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx" />
+</WorkflowParameterValues>
