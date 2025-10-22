@@ -416,7 +416,7 @@ CATEGORY_MAPPINGS = {
     r"(?i)(alert|monitor|analytics)": 7045,
     
     # Default
-    "default": 9999
+    "default": 10001
 }
 
 class QRadarQIDCreator:
