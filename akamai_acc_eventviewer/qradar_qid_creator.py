@@ -622,7 +622,7 @@ class QRadarQIDCreator:
             
             # Process high severity first
             for severity in sorted(severity_groups.keys(), reverse=True):
-                f.write(f'\necho -e "${{YELLOW}}Processing Severity {severity} events...{color}"\n\n')
+                f.write(f'\necho -e "${{YELLOW}}Processing Severity {severity} events...${{NC}}"\n\n')
                 
                 for i, cmd_data in enumerate(severity_groups[severity], 1):
                     total_idx = self.commands.index(cmd_data) + 1
